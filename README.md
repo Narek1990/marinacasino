@@ -32,7 +32,7 @@ An unauthenticated request to the supplied URL returned HTTP 200 with an empty J
 
 ## Use
 
-Open the MarinaCasino account modal while logged in, paste the contents of `marinacasino-withdrawal-history.js` into the browser console, and click `Finances → Withdrawal History` or `Bakiye yönetimi → Para Çekme Geçmişi`.
+Open the MarinaCasino account modal while logged in, paste the contents of `marinacasino-withdrawal-history.js` into the browser console, and click `Finances → Withdrawal History` or `Bakiye yönetimi → Para Çekme Geçmişi`. The bundle version guard replaces an older English bundle if it was already loaded on the page.
 
 The script is idempotent. To remove it from the page, run:
 

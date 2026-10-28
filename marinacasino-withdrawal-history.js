@@ -7,7 +7,13 @@
 (function marinaCasinoWithdrawalHistory() {
   'use strict';
 
-  if (window.__marinaCasinoWithdrawalHistory) return;
+  var BUNDLE_VERSION = '2026-10-28-tr';
+  if (window.__marinaCasinoWithdrawalHistory) {
+    if (window.__marinaCasinoWithdrawalHistory.version === BUNDLE_VERSION) return;
+    if (typeof window.__marinaCasinoWithdrawalHistory.destroy === 'function') {
+      window.__marinaCasinoWithdrawalHistory.destroy();
+    }
+  }
 
   var CONFIG = {
     endpoint: '/api/payment-operations/api/v1.0/userTransactions',
@@ -66,6 +72,7 @@
   };
 
   window.__marinaCasinoWithdrawalHistory = {
+    version: BUNDLE_VERSION,
     open: openWithdrawalHistory,
     refresh: function () { return loadTransactions(); },
     destroy: destroy
