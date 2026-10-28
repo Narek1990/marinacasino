@@ -8,7 +8,7 @@ JavaScript-only account-menu enhancement for MarinaCasino.
 - Detects Turkish account navigation (`Bakiye yönetimi`) and adds `Para Çekme Geçmişi` with Turkish labels.
 - Keeps the operation type fixed to `Withdrawal`.
 - Works from the compact player/account menu by opening the site's real Financial History route before mounting the custom view.
-- Shows `Withdrawal` / `Para Çekme` as the selected operation type in the custom view.
+- Shows `Withdrawal` / `Para Çekme` as the selected operation type. Turkish keeps the native React modal DOM intact to avoid the Turkish route unmounting during navigation.
 - Calls the existing authenticated endpoint with `transactionTypes=withdrawal`.
 - Renders the same five fields shown by Payment History: date/time, operation type, status, amount, and action.
 - Supports date range changes, page size, and pagination.
@@ -34,7 +34,7 @@ An unauthenticated request to the supplied URL returned HTTP 200 with an empty J
 
 ## Use
 
-While logged in, paste the contents of `marinacasino-withdrawal-history.js` into the browser console. The injected item can be opened from the compact player menu or from the account modal: `Finances → Withdrawal History` or `Bakiye yönetimi → Para Çekme Geçmişi`. The script opens the site's real Financial History route, then replaces its div-based or table-based content with a withdrawal-only view and selects the withdrawal operation. The bundle version guard replaces an older English bundle if it was already loaded on the page.
+While logged in, paste the contents of `marinacasino-withdrawal-history.js` into the browser console. The injected item can be opened from the compact player menu or from the account modal: `Finances → Withdrawal History` or `Bakiye yönetimi → Para Çekme Geçmişi`. The script opens the site's real Financial History route and selects the withdrawal operation. English uses the stable custom view; Turkish keeps the native React modal DOM intact while applying the native withdrawal filter so the Turkish route does not unmount. The bundle version guard replaces an older bundle if it was already loaded on the page.
 
 The script is idempotent. To remove it from the page, run:
 

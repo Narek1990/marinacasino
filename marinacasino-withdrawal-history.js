@@ -7,7 +7,7 @@
 (function marinaCasinoWithdrawalHistory() {
   'use strict';
 
-  var BUNDLE_VERSION = '2026-10-28-tr2';
+  var BUNDLE_VERSION = '2026-10-28-tr3';
   if (window.__marinaCasinoWithdrawalHistory) {
     if (window.__marinaCasinoWithdrawalHistory.version === BUNDLE_VERSION) return;
     if (typeof window.__marinaCasinoWithdrawalHistory.destroy === 'function') {
@@ -220,6 +220,12 @@
 
     selectWithdrawalOperation(modal, copy);
 
+    // The Turkish build owns this modal more aggressively than the English
+    // build. Keep its React-managed DOM intact and use the native selected
+    // operation filter instead of replacing the modal body; replacing it is
+    // what causes the Turkish modal to unmount and return to the homepage.
+    if (copy.locale === 'tr-TR') return true;
+
     var root = document.createElement('section');
     root.className = 'mc-withdrawal-history';
     root.setAttribute('data-marinacasino-withdrawal-history-root', 'true');
@@ -264,17 +270,31 @@
     });
     if (!control || control.getAttribute('data-mc-withdrawal-selected') === 'true') return;
 
-    control.setAttribute('data-mc-withdrawal-selected', 'true');
     var clickable = control.closest('[class*="control"]') || control;
+    if (normalizedText(clickable).indexOf(copy.withdrawal.toLowerCase()) !== -1) return true;
     clickable.click();
+    chooseWithdrawalOption(copy, 0);
+    return true;
+  }
+
+  function chooseWithdrawalOption(copy, attempt) {
     window.setTimeout(function () {
       var option = Array.prototype.find.call(document.querySelectorAll('[role="option"], [class*="option"]'), function (candidate) {
         var text = normalizedText(candidate);
         return text === copy.withdrawal.toLowerCase() ||
-          text === 'withdrawal' || text === 'para çekme';
+          text === 'withdrawal' || text === 'para çekme' ||
+          text.indexOf(copy.withdrawal.toLowerCase()) === 0;
       });
-      if (option) option.click();
-    }, 0);
+      if (option) {
+        option.click();
+        var control = Array.prototype.find.call(document.querySelectorAll('[role="combobox"], input[aria-haspopup="listbox"]'), function (candidate) {
+          return normalizedText(candidate.closest('[class*="control"]') || candidate).indexOf(copy.withdrawal.toLowerCase()) !== -1;
+        });
+        if (control) control.setAttribute('data-mc-withdrawal-selected', 'true');
+      } else if (attempt < 8) {
+        chooseWithdrawalOption(copy, attempt + 1);
+      }
+    }, 50);
   }
 
   function findPaymentHistoryHost(table, modal, copy) {
