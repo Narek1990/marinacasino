@@ -7,7 +7,7 @@
 (function marinaCasinoWithdrawalHistory() {
   'use strict';
 
-  var BUNDLE_VERSION = '2026-10-28-tr6';
+  var BUNDLE_VERSION = '2026-10-28-tr7';
   if (window.__marinaCasinoWithdrawalHistory) {
     if (window.__marinaCasinoWithdrawalHistory.version === BUNDLE_VERSION) return;
     if (typeof window.__marinaCasinoWithdrawalHistory.destroy === 'function') {
@@ -256,7 +256,7 @@
     }, 250);
   }
 
-  function selectWithdrawalOperation(modal, copy, attempt) {    attempt = attempt || 0;    var needle = normalizeOperationText(copy.operationType);    var selector = 'select, [role="combobox"], input[aria-haspopup="listbox"]';    var label = Array.prototype.find.call(modal.querySelectorAll('label'), function (node) {      return normalizeOperationText(normalizedText(node)) === needle;    });    var field = label && label.getAttribute('for') && document.getElementById(label.getAttribute('for'));    var control = (field && field.querySelector(selector)) || (label && label.parentElement.querySelector(selector));    if (!control) control = Array.prototype.find.call(modal.querySelectorAll(selector), function (candidate) {      var node = candidate;      for (var depth = 0; node && depth < 8; depth += 1, node = node.parentElement) {        var text = normalizeOperationText(normalizedText(node));        if (text.indexOf(needle) !== -1 || text.indexOf('operation type') !== -1 || text.indexOf('islem turu') !== -1) return true;      }      return false;    });    if (!control) {      if (attempt < 20) window.setTimeout(function () { selectWithdrawalOperation(modal, copy, attempt + 1); }, 150);      return false;    }    var clickable = control.closest('[class*="control"]') || control;    if (isWithdrawalText(normalizedText(clickable), copy)) return true;    if (control.tagName.toLowerCase() === 'select') {      var option = Array.prototype.find.call(control.options, function (item) { return isWithdrawalText(normalizedText(item), copy); });      if (option) { control.value = option.value; control.dispatchEvent(new Event('change', { bubbles: true })); }      return true;    }    clickable.click();    chooseWithdrawalOption(copy, 0);    return true;  }  function chooseWithdrawalOption(copy, attempt) {
+  function selectWithdrawalOperation(modal, copy, attempt) {    attempt = attempt || 0;    var needle = normalizedText(copy.operationType);    var selector = 'select, [role="combobox"], input[aria-haspopup="listbox"], input[aria-haspopup="true"]';    var label = Array.prototype.find.call(modal.querySelectorAll('label'), function (node) {      return normalizedText(normalizedText(node)) === needle;    });    var field = label && label.getAttribute('for') && document.getElementById(label.getAttribute('for'));    var control = (field && field.querySelector(selector)) || (label && label.parentElement.querySelector(selector));    if (!control) control = Array.prototype.find.call(modal.querySelectorAll(selector), function (candidate) {      var node = candidate;      for (var depth = 0; node && depth < 8; depth += 1, node = node.parentElement) {        var text = normalizedText(normalizedText(node));        if (text.indexOf(needle) !== -1 || text.indexOf('operation type') !== -1 || text.indexOf('islem turu') !== -1) return true;      }      return false;    });    if (!control) {      if (attempt < 20) window.setTimeout(function () { selectWithdrawalOperation(modal, copy, attempt + 1); }, 150);      return false;    }    var clickable = control.closest('[class*="control"]') || control;    if (isWithdrawalText(normalizedText(clickable), copy)) return true;    if (control.tagName.toLowerCase() === 'select') {      var option = Array.prototype.find.call(control.options, function (item) { return isWithdrawalText(normalizedText(item), copy); });      if (option) { control.value = option.value; control.dispatchEvent(new Event('change', { bubbles: true })); }      return true;    }    clickable.click();    chooseWithdrawalOption(copy, 0);    return true;  }  function chooseWithdrawalOption(copy, attempt) {
     window.setTimeout(function () {
       var option = Array.prototype.find.call(document.querySelectorAll('[role="option"], [class*="option"]'), function (candidate) {
         var text = normalizedText(candidate);
@@ -266,7 +266,7 @@
       });
       if (option) {
         option.click();
-        var control = Array.prototype.find.call(document.querySelectorAll('[role="combobox"], input[aria-haspopup="listbox"]'), function (candidate) {
+        var control = Array.prototype.find.call(document.querySelectorAll('[role="combobox"], input[aria-haspopup="listbox"], input[aria-haspopup="true"]'), function (candidate) {
           return normalizedText(candidate.closest('[class*="control"]') || candidate).indexOf(copy.withdrawal.toLowerCase()) !== -1;
         });
         if (control) control.setAttribute('data-mc-withdrawal-selected', 'true');
