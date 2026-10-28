@@ -276,7 +276,7 @@
     }, 50);
   }
 
-  function findPaymentHistoryHost(table, modal, copy) {
+  function normalizedText(value){var text=typeof value==='string'?value:(value&&value.textContent||'');return text.replace(/\s+/g,' ').trim().toLowerCase();} function isWithdrawalText(text,copy){var value=normalizedText(text);var labels=copy.locale==='tr-TR'?['para çekme','çekim','cekim']:['withdrawal'];return labels.some(function(label){var candidate=normalizedText(label);return value===candidate||value.indexOf(candidate)!==-1;});} function findPaymentHistoryHost(table, modal, copy) {
     if (table) {
       var node = table.parentElement;
       while (node && node !== modal) {
