@@ -7,7 +7,7 @@
 (function marinaCasinoWithdrawalHistory() {
   'use strict';
 
-  var BUNDLE_VERSION = '2026-10-28-tr8';
+  var BUNDLE_VERSION = '2026-10-28-tr9';
   if (window.__marinaCasinoWithdrawalHistory) {
     if (window.__marinaCasinoWithdrawalHistory.version === BUNDLE_VERSION) return;
     if (typeof window.__marinaCasinoWithdrawalHistory.destroy === 'function') {
@@ -181,7 +181,7 @@
     if (!modal) {
       var paymentLink = findPaymentLink(document, copy);
       if (paymentLink) {
-        paymentLink.click();
+        openPaymentHistoryRoute(paymentLink, copy);
         waitForAccountModal();
         return true;
       }
@@ -211,7 +211,7 @@
       // route mount Payment History first, then replace its content.
       var paymentLink = findPaymentLink(modal, copy);
       if (paymentLink) {
-        paymentLink.click();
+        openPaymentHistoryRoute(paymentLink, copy);
         waitForAccountModal();
         return true;
       }
@@ -245,7 +245,7 @@
     });
   }
 
-  function waitForAccountModal(attempt) {
+  function openPaymentHistoryRoute(paymentLink, copy) { var route = paymentLink.getAttribute('href') || copy.paymentRoute; if (window.history && typeof window.history.pushState === 'function') { window.history.pushState({}, '', route); window.dispatchEvent(new PopStateEvent('popstate')); waitForAccountModal(); return; } paymentLink.click(); waitForAccountModal(); } function waitForAccountModal(attempt) {
     attempt = attempt || 0;
     window.setTimeout(function () {
       if (document.querySelector('[role="alertdialog"], .modal')) {
