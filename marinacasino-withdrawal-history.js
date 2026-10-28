@@ -7,7 +7,7 @@
 (function marinaCasinoWithdrawalHistory() {
   'use strict';
 
-  var BUNDLE_VERSION = '2026-10-28-tr3';
+  var BUNDLE_VERSION = '2026-10-28-tr4';
   if (window.__marinaCasinoWithdrawalHistory) {
     if (window.__marinaCasinoWithdrawalHistory.version === BUNDLE_VERSION) return;
     if (typeof window.__marinaCasinoWithdrawalHistory.destroy === 'function') {
@@ -50,7 +50,7 @@
       operationType: 'İşlem Türü',
       today: 'Bugün',
       lastMonth: 'Geçen ay',
-      withdrawal: 'Para Çekme',
+      withdrawal: 'Çekim',
       headers: ['Tarih Saat', 'İşlem Türü', 'Durum', 'Tutar', 'İşlem'],
       rowsPerPage: 'Sayfa başına satır',
       noData: 'Veri yok',
