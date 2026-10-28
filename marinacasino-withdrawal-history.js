@@ -7,7 +7,7 @@
 (function marinaCasinoWithdrawalHistory() {
   'use strict';
 
-  var BUNDLE_VERSION = '2026-10-28-tr';
+  var BUNDLE_VERSION = '2026-10-28-tr2';
   if (window.__marinaCasinoWithdrawalHistory) {
     if (window.__marinaCasinoWithdrawalHistory.version === BUNDLE_VERSION) return;
     if (typeof window.__marinaCasinoWithdrawalHistory.destroy === 'function') {
@@ -27,7 +27,7 @@
       sectionLabels: ['finances'],
       paymentLabels: ['payment history'],
       menuLabel: 'Withdrawal History',
-      route: '/en/casino?m=account&t=withdrawal_history',
+      paymentRoute: '/en/casino?m=account&t=financial',
       dateRange: 'Date Range',
       operationType: 'Operation Type',
       today: 'Today',
@@ -45,7 +45,7 @@
       sectionLabels: ['bakiye yönetimi', 'finanslar'],
       paymentLabels: ['finansal', 'ödeme geçmişi'],
       menuLabel: 'Para Çekme Geçmişi',
-      route: '/tr/?m=account&t=withdrawal_history',
+      paymentRoute: '/tr/?m=account&t=financial',
       dateRange: 'Tarih Aralığı',
       operationType: 'İşlem Türü',
       today: 'Bugün',
@@ -68,7 +68,8 @@
     total: 0,
     root: null,
     loading: false,
-    requestId: 0
+    requestId: 0,
+    menuOpening: false
   };
 
   window.__marinaCasinoWithdrawalHistory = {
@@ -83,6 +84,10 @@
 
   function boot() {
     ensureMenuItem();
+
+    ['pointerdown', 'mousedown', 'click'].forEach(function (type) {
+      document.addEventListener(type, handleWithdrawalLink, true);
+    });
 
     var observer = new MutationObserver(function () {
       ensureMenuItem();
@@ -132,7 +137,8 @@
     wrapper.className = 'app-ltr-8atqhb';
 
     var link = document.createElement('a');
-    link.href = copy.route;
+    // The site knows how to open its Financial History modal, not our custom route.
+    link.href = copy.paymentRoute;
     link.className = 'sl-navlink app-ltr-1bacv49';
     link.setAttribute('data-marinacasino-withdrawal-link', 'true');
 
@@ -144,12 +150,6 @@
     wrapper.appendChild(link);
     item.appendChild(wrapper);
 
-    link.addEventListener('click', function (event) {
-      event.preventDefault();
-      event.stopPropagation();
-      openWithdrawalHistory();
-    });
-
     var paymentHistoryItem = Array.prototype.find.call(submenu.querySelectorAll('[data-mj="account-menu-item"]'), function (candidate) {
       return copy.paymentLabels.indexOf(normalizedText(candidate)) !== -1;
     });
@@ -158,13 +158,40 @@
     return true;
   }
 
+  function handleWithdrawalLink(event) {
+    var target = event.target;
+    var link = target && target.closest && target.closest('[data-marinacasino-withdrawal-link]');
+    if (!link) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (state.menuOpening) return;
+
+    state.menuOpening = true;
+    window.setTimeout(function () { state.menuOpening = false; }, 1000);
+    openWithdrawalHistory();
+  }
+
   function openWithdrawalHistory() {
     var modal = document.querySelector('[role="alertdialog"], .modal');
-    if (!modal) return false;
+    var copy = getCopy(document.querySelector('[data-mj="account-menu"]') || document.body);
+
+    // The compact player menu exists before the account modal. Open the real
+    // Financial History route first, then retry after React mounts the modal.
+    if (!modal) {
+      var paymentLink = findPaymentLink(document, copy);
+      if (paymentLink) {
+        paymentLink.click();
+        waitForAccountModal();
+        return true;
+      }
+      window.location.href = copy.paymentRoute;
+      return true;
+    }
 
     ensureMenuItem();
     setActiveMenuItem(modal);
-    var copy = getCopy(modal);
+    copy = getCopy(modal);
 
     var closeButton = modal.querySelector('button[name="close"], button[aria-label="close"]');
     var headingScope = closeButton && closeButton.parentElement;
@@ -178,22 +205,20 @@
       return (text.indexOf('date time') !== -1 || text.indexOf('tarih') !== -1) &&
         (text.indexOf('operation type') !== -1 || text.indexOf('işlem') !== -1);
     });
-    if (!table) {
+    var host = findPaymentHistoryHost(table, modal, copy);
+    if (!host) {
       // If the user clicked from another account tab, let the existing React
       // route mount Payment History first, then replace its content.
-      var paymentLink = Array.prototype.find.call(modal.querySelectorAll('a'), function (link) {
-        return copy.paymentLabels.indexOf(normalizedText(link)) !== -1 || /[?&]t=financial(?:&|$)/.test(link.getAttribute('href') || '');
-      });
+      var paymentLink = findPaymentLink(modal, copy);
       if (paymentLink) {
         paymentLink.click();
-        window.setTimeout(openWithdrawalHistory, 250);
+        waitForAccountModal();
         return true;
       }
       return false;
     }
 
-    var host = findPaymentHistoryHost(table, modal);
-    if (!host) return false;
+    selectWithdrawalOperation(modal, copy);
 
     var root = document.createElement('section');
     root.className = 'mc-withdrawal-history';
@@ -206,18 +231,90 @@
     return true;
   }
 
-  function findPaymentHistoryHost(table, modal) {
-    var node = table.parentElement;
-    while (node && node !== modal) {
-      var hasDatePicker = node.querySelector('.react-daterange-picker, #date-range-picker');
-      if (hasDatePicker && node.contains(table)) return node;
-      node = node.parentElement;
+  function findPaymentLink(scope, copy) {
+    return Array.prototype.find.call(scope.querySelectorAll('a'), function (link) {
+      if (link.hasAttribute('data-marinacasino-withdrawal-link')) return false;
+      return copy.paymentLabels.indexOf(normalizedText(link)) !== -1 ||
+        /[?&]t=financial(?:&|$)/.test(link.getAttribute('href') || '');
+    });
+  }
+
+  function waitForAccountModal(attempt) {
+    attempt = attempt || 0;
+    window.setTimeout(function () {
+      if (document.querySelector('[role="alertdialog"], .modal')) {
+        openWithdrawalHistory();
+      } else if (attempt < 20) {
+        waitForAccountModal(attempt + 1);
+      }
+    }, 250);
+  }
+
+  function selectWithdrawalOperation(modal, copy) {
+    var labelText = copy.operationType.toLowerCase();
+    var controls = modal.querySelectorAll('[role="combobox"], input[aria-haspopup="listbox"]');
+    var control = Array.prototype.find.call(controls, function (candidate) {
+      var node = candidate;
+      for (var depth = 0; node && depth < 5; depth += 1, node = node.parentElement) {
+        var text = normalizedText(node);
+        if (text.indexOf(labelText) !== -1 ||
+          text.indexOf('operation type') !== -1 || text.indexOf('işlem türü') !== -1) return true;
+      }
+      return false;
+    });
+    if (!control || control.getAttribute('data-mc-withdrawal-selected') === 'true') return;
+
+    control.setAttribute('data-mc-withdrawal-selected', 'true');
+    var clickable = control.closest('[class*="control"]') || control;
+    clickable.click();
+    window.setTimeout(function () {
+      var option = Array.prototype.find.call(document.querySelectorAll('[role="option"], [class*="option"]'), function (candidate) {
+        var text = normalizedText(candidate);
+        return text === copy.withdrawal.toLowerCase() ||
+          text === 'withdrawal' || text === 'para çekme';
+      });
+      if (option) option.click();
+    }, 0);
+  }
+
+  function findPaymentHistoryHost(table, modal, copy) {
+    if (table) {
+      var node = table.parentElement;
+      while (node && node !== modal) {
+        var hasDatePicker = node.querySelector('.react-daterange-picker, #date-range-picker');
+        if (hasDatePicker && node.contains(table)) return node;
+        node = node.parentElement;
+      }
+
+      // Fallback for a future build where the date picker class changes.
+      return table.parentElement && table.parentElement.parentElement
+        ? table.parentElement.parentElement
+        : table.parentElement;
     }
 
-    // Fallback for a future build where the date picker class changes.
-    return table.parentElement && table.parentElement.parentElement
-      ? table.parentElement.parentElement
-      : table.parentElement;
+    // This site renders the payment-history grid with divs in some builds,
+    // not a semantic <table>. Find the smallest shared body that contains both
+    // filter labels, then replace only that body with our stable view.
+    var dateNeedle = copy.dateRange.toLowerCase();
+    var operationNeedle = copy.operationType.toLowerCase();
+    var candidates = modal.querySelectorAll('label, span, p, div, section');
+    var match = Array.prototype.find.call(candidates, function (candidate) {
+      var text = normalizedText(candidate);
+      if (text.indexOf(dateNeedle) === -1 || text.indexOf(operationNeedle) === -1) return false;
+      return candidate !== modal && candidate.querySelectorAll('input, button, [role="combobox"]').length >= 2;
+    });
+    if (!match) return false;
+
+    // Prefer the nearest body wrapper instead of the individual filter row.
+    var body = match;
+    while (body.parentElement && body.parentElement !== modal) {
+      var parentText = normalizedText(body.parentElement);
+      if (parentText.indexOf(dateNeedle) === -1 || parentText.indexOf(operationNeedle) === -1) break;
+      var parent = body.parentElement;
+      body = parent;
+      if (parent.querySelectorAll('input, button, [role="combobox"]').length > 5) break;
+    }
+    return body;
   }
 
   function renderShell(copy) {
@@ -280,10 +377,16 @@
     var typeField = document.createElement('label');
     typeField.className = 'mc-withdrawal-field';
     typeField.appendChild(fieldCaption(copy.operationType));
-    var typeValue = document.createElement('div');
-    typeValue.className = 'mc-withdrawal-type-value';
-    typeValue.textContent = copy.withdrawal;
-    typeField.appendChild(typeValue);
+    var typeSelect = document.createElement('select');
+    typeSelect.className = 'mc-withdrawal-type-select';
+    typeSelect.setAttribute('aria-label', copy.operationType);
+    typeSelect.disabled = true;
+    var withdrawalOption = document.createElement('option');
+    withdrawalOption.value = CONFIG.operationType;
+    withdrawalOption.textContent = copy.withdrawal;
+    withdrawalOption.selected = true;
+    typeSelect.appendChild(withdrawalOption);
+    typeField.appendChild(typeSelect);
     filters.appendChild(typeField);
 
     state.root.appendChild(filters);
@@ -603,9 +706,10 @@
       '.mc-withdrawal-button:hover{border-color:#fff}',
       '.mc-withdrawal-field{display:flex;flex-direction:column;gap:7px;min-width:0}',
       '.mc-withdrawal-field-caption{font-size:14px;color:#c4c8d8}',
-      '.mc-withdrawal-date-range,.mc-withdrawal-type-value{border:1px solid #aab1c5;border-radius:18px;min-height:40px;display:flex;align-items:center;gap:8px;padding:0 14px;box-sizing:border-box}',
+      '.mc-withdrawal-date-range,.mc-withdrawal-type-select{border:1px solid #aab1c5;border-radius:18px;min-height:40px;display:flex;align-items:center;gap:8px;padding:0 14px;box-sizing:border-box}',
       '.mc-withdrawal-date-range input{background:transparent;border:0;color:#fff;min-width:0;font:inherit;flex:1}',
-      '.mc-withdrawal-type-value{justify-content:space-between}',
+      '.mc-withdrawal-type-select{background:#080f2b;color:#fff;font:inherit;width:100%;appearance:auto}',
+      '.mc-withdrawal-type-select:disabled{opacity:1;cursor:default}',
       '.mc-withdrawal-table-wrapper{overflow:auto}',
       '.mc-withdrawal-table{border-collapse:collapse;width:100%;font-size:13px}',
       '.mc-withdrawal-table th{text-align:left;font-weight:600;color:#fff;padding:0 16px 15px;border-bottom:1px solid #2a3553}',
@@ -627,6 +731,9 @@
   function destroy() {
     if (state.observer) state.observer.disconnect();
     if (state.timer) window.clearInterval(state.timer);
+    ['pointerdown', 'mousedown', 'click'].forEach(function (type) {
+      document.removeEventListener(type, handleWithdrawalLink, true);
+    });
     var menuItem = document.querySelector('[data-marinacasino-withdrawal-history]');
     if (menuItem) menuItem.remove();
     var style = document.getElementById('marinacasino-withdrawal-history-styles');
