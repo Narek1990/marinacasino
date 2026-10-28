@@ -7,7 +7,7 @@
 (function marinaCasinoWithdrawalHistory() {
   'use strict';
 
-  var BUNDLE_VERSION = '2026-10-28-tr7';
+  var BUNDLE_VERSION = '2026-10-28-tr8';
   if (window.__marinaCasinoWithdrawalHistory) {
     if (window.__marinaCasinoWithdrawalHistory.version === BUNDLE_VERSION) return;
     if (typeof window.__marinaCasinoWithdrawalHistory.destroy === 'function') {
@@ -661,8 +661,8 @@
     return String(value) + (currency ? ' ' + currency : '');
   }
 
-  function normalizedText(node) {
-    return (node.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  function normalizedText(node) { var text = typeof node === 'string' ? node : (node && node.textContent || '');
+    return text.replace(/\s+/g, ' ').trim().toLowerCase();
   }
 
   function startOfDay(date) {
