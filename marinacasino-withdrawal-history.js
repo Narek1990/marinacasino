@@ -7,7 +7,7 @@
 (function marinaCasinoWithdrawalHistory() {
   'use strict';
 
-  var BUNDLE_VERSION = '2026-10-28-tr9';
+  var BUNDLE_VERSION = '2026-10-28-tr10';
   if (window.__marinaCasinoWithdrawalHistory) {
     if (window.__marinaCasinoWithdrawalHistory.version === BUNDLE_VERSION) return;
     if (typeof window.__marinaCasinoWithdrawalHistory.destroy === 'function') {
@@ -224,12 +224,12 @@
     // build. Keep its React-managed DOM intact and use the native selected
     // operation filter instead of replacing the modal body; replacing it is
     // what causes the Turkish modal to unmount and return to the homepage.
-    // Keep the site's React-managed payment-history DOM intact for both locales. return true;
+    return true;
 
     var root = document.createElement('section');
     root.className = 'mc-withdrawal-history';
     root.setAttribute('data-marinacasino-withdrawal-history-root', 'true');
-    host.replaceChildren(root);
+    return true; host.replaceChildren(root);
     state.root = root;
 
     renderShell(copy);
