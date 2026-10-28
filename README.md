@@ -5,6 +5,7 @@ JavaScript-only account-menu enhancement for MarinaCasino.
 ## What it does
 
 - Adds `Withdrawal History` under the existing `Finances` section, next to Payment History.
+- Detects Turkish account navigation (`Bakiye yönetimi`) and adds `Para Çekme Geçmişi` with Turkish labels.
 - Keeps the operation type fixed to `Withdrawal`.
 - Calls the existing authenticated endpoint with `transactionTypes=withdrawal`.
 - Renders the same five fields shown by Payment History: date/time, operation type, status, amount, and action.
@@ -31,7 +32,7 @@ An unauthenticated request to the supplied URL returned HTTP 200 with an empty J
 
 ## Use
 
-Open the MarinaCasino account modal while logged in, paste the contents of `marinacasino-withdrawal-history.js` into the browser console, and click `History → Withdrawal History`.
+Open the MarinaCasino account modal while logged in, paste the contents of `marinacasino-withdrawal-history.js` into the browser console, and click `Finances → Withdrawal History` or `Bakiye yönetimi → Para Çekme Geçmişi`.
 
 The script is idempotent. To remove it from the page, run:
 

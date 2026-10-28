@@ -11,9 +11,47 @@
 
   var CONFIG = {
     endpoint: '/api/payment-operations/api/v1.0/userTransactions',
-    menuLabel: 'Withdrawal History',
     operationType: 'withdrawal',
     defaultPageSize: 20
+  };
+
+  var COPY = {
+    en: {
+      locale: 'en-US',
+      sectionLabels: ['finances'],
+      paymentLabels: ['payment history'],
+      menuLabel: 'Withdrawal History',
+      route: '/en/casino?m=account&t=withdrawal_history',
+      dateRange: 'Date Range',
+      operationType: 'Operation Type',
+      today: 'Today',
+      lastMonth: 'Last month',
+      withdrawal: 'Withdrawal',
+      headers: ['Date Time', 'Operation Type', 'Status', 'Amount', 'Action'],
+      rowsPerPage: 'Rows per page',
+      noData: 'No data available',
+      loading: 'Loading…',
+      view: 'View',
+      error: 'Unable to load withdrawal history.'
+    },
+    tr: {
+      locale: 'tr-TR',
+      sectionLabels: ['bakiye yönetimi', 'finanslar'],
+      paymentLabels: ['finansal', 'ödeme geçmişi'],
+      menuLabel: 'Para Çekme Geçmişi',
+      route: '/tr/?m=account&t=withdrawal_history',
+      dateRange: 'Tarih Aralığı',
+      operationType: 'İşlem Türü',
+      today: 'Bugün',
+      lastMonth: 'Geçen ay',
+      withdrawal: 'Para Çekme',
+      headers: ['Tarih Saat', 'İşlem Türü', 'Durum', 'Tutar', 'İşlem'],
+      rowsPerPage: 'Sayfa başına satır',
+      noData: 'Veri yok',
+      loading: 'Yükleniyor…',
+      view: 'Görüntüle',
+      error: 'Para çekme geçmişi yüklenemedi.'
+    }
   };
 
   var state = {
@@ -59,8 +97,10 @@
     var menu = document.querySelector('[data-mj="account-menu"]');
     if (!menu) return false;
 
+    var copy = getCopy(menu);
+
     var financesLink = Array.prototype.find.call(menu.querySelectorAll('a'), function (link) {
-      return normalizedText(link) === 'finances';
+      return copy.sectionLabels.indexOf(normalizedText(link)) !== -1;
     });
     if (!financesLink) return false;
 
@@ -85,13 +125,13 @@
     wrapper.className = 'app-ltr-8atqhb';
 
     var link = document.createElement('a');
-    link.href = '/en/casino?m=account&t=withdrawal_history';
+    link.href = copy.route;
     link.className = 'sl-navlink app-ltr-1bacv49';
     link.setAttribute('data-marinacasino-withdrawal-link', 'true');
 
     var label = document.createElement('div');
     label.className = 'app-ltr-1eqbxal';
-    label.appendChild(document.createTextNode(CONFIG.menuLabel));
+    label.appendChild(document.createTextNode(copy.menuLabel));
 
     link.appendChild(label);
     wrapper.appendChild(link);
@@ -104,7 +144,7 @@
     });
 
     var paymentHistoryItem = Array.prototype.find.call(submenu.querySelectorAll('[data-mj="account-menu-item"]'), function (candidate) {
-      return normalizedText(candidate) === 'payment history';
+      return copy.paymentLabels.indexOf(normalizedText(candidate)) !== -1;
     });
     if (paymentHistoryItem) paymentHistoryItem.insertAdjacentElement('afterend', item);
     else submenu.appendChild(item);
@@ -117,23 +157,25 @@
 
     ensureMenuItem();
     setActiveMenuItem(modal);
+    var copy = getCopy(modal);
 
     var closeButton = modal.querySelector('button[name="close"], button[aria-label="close"]');
     var headingScope = closeButton && closeButton.parentElement;
     var heading = headingScope && Array.prototype.find.call(headingScope.querySelectorAll('span, h1, h2, h3'), function (node) {
-      return normalizedText(node) === 'payment history' || normalizedText(node) === CONFIG.menuLabel.toLowerCase();
+      return copy.paymentLabels.indexOf(normalizedText(node)) !== -1 || normalizedText(node) === copy.menuLabel.toLowerCase();
     });
-    if (heading) heading.textContent = CONFIG.menuLabel;
+    if (heading) heading.textContent = copy.menuLabel;
 
     var table = Array.prototype.find.call(modal.querySelectorAll('table'), function (candidate) {
-      return normalizedText(candidate).indexOf('date time') !== -1 &&
-        normalizedText(candidate).indexOf('operation type') !== -1;
+      var text = normalizedText(candidate);
+      return (text.indexOf('date time') !== -1 || text.indexOf('tarih') !== -1) &&
+        (text.indexOf('operation type') !== -1 || text.indexOf('işlem') !== -1);
     });
     if (!table) {
       // If the user clicked from another account tab, let the existing React
       // route mount Payment History first, then replace its content.
       var paymentLink = Array.prototype.find.call(modal.querySelectorAll('a'), function (link) {
-        return normalizedText(link) === 'payment history';
+        return copy.paymentLabels.indexOf(normalizedText(link)) !== -1 || /[?&]t=financial(?:&|$)/.test(link.getAttribute('href') || '');
       });
       if (paymentLink) {
         paymentLink.click();
@@ -152,7 +194,7 @@
     host.replaceChildren(root);
     state.root = root;
 
-    renderShell();
+    renderShell(copy);
     loadTransactions();
     return true;
   }
@@ -171,7 +213,7 @@
       : table.parentElement;
   }
 
-  function renderShell() {
+  function renderShell(copy) {
     if (!state.root) return;
 
     state.root.replaceChildren();
@@ -181,14 +223,14 @@
 
     var quickActions = document.createElement('div');
     quickActions.className = 'mc-withdrawal-quick-actions';
-    quickActions.appendChild(button('Today', function () {
+    quickActions.appendChild(button(copy.today, function () {
       state.from = startOfDay(new Date());
       state.to = new Date();
       state.page = 1;
       syncDateInputs();
       loadTransactions();
     }));
-    quickActions.appendChild(button('Last month', function () {
+    quickActions.appendChild(button(copy.lastMonth, function () {
       var now = new Date();
       state.from = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
       state.to = now;
@@ -200,7 +242,7 @@
 
     var dateField = document.createElement('label');
     dateField.className = 'mc-withdrawal-field';
-    dateField.appendChild(fieldCaption('Date Range'));
+    dateField.appendChild(fieldCaption(copy.dateRange));
     var dateRange = document.createElement('div');
     dateRange.className = 'mc-withdrawal-date-range';
 
@@ -230,20 +272,20 @@
 
     var typeField = document.createElement('label');
     typeField.className = 'mc-withdrawal-field';
-    typeField.appendChild(fieldCaption('Operation Type'));
+    typeField.appendChild(fieldCaption(copy.operationType));
     var typeValue = document.createElement('div');
     typeValue.className = 'mc-withdrawal-type-value';
-    typeValue.textContent = 'Withdrawal';
+    typeValue.textContent = copy.withdrawal;
     typeField.appendChild(typeValue);
     filters.appendChild(typeField);
 
     state.root.appendChild(filters);
-    state.root.appendChild(createTable());
-    state.root.appendChild(createFooter());
+    state.root.appendChild(createTable(copy));
+    state.root.appendChild(createFooter(copy));
     syncDateInputs();
   }
 
-  function createTable() {
+  function createTable(copy) {
     var wrapper = document.createElement('div');
     wrapper.className = 'mc-withdrawal-table-wrapper';
 
@@ -251,7 +293,7 @@
     table.className = 'mc-withdrawal-table';
     var head = document.createElement('thead');
     var row = document.createElement('tr');
-    ['Date Time', 'Operation Type', 'Status', 'Amount', 'Action'].forEach(function (title) {
+    copy.headers.forEach(function (title) {
       var cell = document.createElement('th');
       cell.textContent = title;
       row.appendChild(cell);
@@ -265,7 +307,7 @@
     var emptyCell = document.createElement('td');
     emptyCell.colSpan = 5;
     emptyCell.className = 'mc-withdrawal-empty';
-    emptyCell.textContent = 'Loading…';
+    emptyCell.textContent = copy.loading;
     emptyRow.appendChild(emptyCell);
     body.appendChild(emptyRow);
     table.appendChild(body);
@@ -273,12 +315,12 @@
     return wrapper;
   }
 
-  function createFooter() {
+  function createFooter(copy) {
     var footer = document.createElement('div');
     footer.className = 'mc-withdrawal-footer';
 
     var rowsLabel = document.createElement('span');
-    rowsLabel.textContent = 'Rows per page';
+    rowsLabel.textContent = copy.rowsPerPage;
     footer.appendChild(rowsLabel);
 
     var pageSize = document.createElement('select');
@@ -357,7 +399,7 @@
     } catch (error) {
       if (requestId !== state.requestId) return;
       state.total = 0;
-      renderMessage(error.message || 'Unable to load withdrawal history.');
+      renderMessage(error.message || getCopy(state.root).error);
       updateFooter();
     } finally {
       if (requestId === state.requestId) {
@@ -380,6 +422,7 @@
   function renderRows(items) {
     var body = state.root && state.root.querySelector('[data-mc-rows]');
     if (!body) return;
+    var copy = getCopy(state.root);
     body.replaceChildren();
 
     if (!items.length) {
@@ -387,7 +430,7 @@
       var cell = document.createElement('td');
       cell.colSpan = 5;
       cell.className = 'mc-withdrawal-empty';
-      cell.textContent = 'No data available';
+      cell.textContent = getCopy(state.root).noData;
       row.appendChild(cell);
       body.appendChild(row);
       return;
@@ -395,8 +438,8 @@
 
     items.forEach(function (transaction) {
       var row = document.createElement('tr');
-      addCell(row, formatTransactionDate(transaction));
-      addCell(row, transaction.operationType || transaction.transactionType || transaction.type || 'Withdrawal');
+      addCell(row, formatTransactionDate(transaction, copy.locale));
+      addCell(row, transaction.operationType || transaction.transactionType || transaction.type || copy.withdrawal);
       addCell(row, transaction.status || transaction.state || '—');
       addCell(row, formatAmount(transaction.amount == null ? transaction.value : transaction.amount, transaction.currency));
 
@@ -406,7 +449,7 @@
         var action = document.createElement('button');
         action.type = 'button';
         action.className = 'mc-withdrawal-action';
-        action.textContent = 'View';
+        action.textContent = copy.view;
         action.title = 'Transaction ' + id;
         action.addEventListener('click', function () {
           window.dispatchEvent(new CustomEvent('marinacasino:withdrawal-selected', { detail: transaction }));
@@ -487,11 +530,21 @@
     return caption;
   }
 
-  function formatTransactionDate(transaction) {
+  function getCopy(scope) {
+    var path = String(window.location.pathname || '').toLowerCase();
+    var text = scope ? normalizedText(scope) : '';
+    var documentLanguage = String(document.documentElement.lang || '').toLowerCase();
+    var isTurkish = path === '/tr' || path.indexOf('/tr/') === 0 ||
+      text.indexOf('bakiye yönetimi') !== -1 || text.indexOf('geçmiş') !== -1 ||
+      documentLanguage.indexOf('tr') === 0;
+    return isTurkish ? COPY.tr : COPY.en;
+  }
+
+  function formatTransactionDate(transaction, locale) {
     var raw = transaction.creationDate || transaction.createdAt || transaction.transactionDate || transaction.date || transaction.createdOn;
     if (!raw) return '—';
     var date = new Date(raw);
-    return Number.isNaN(date.getTime()) ? String(raw) : date.toLocaleString();
+    return Number.isNaN(date.getTime()) ? String(raw) : date.toLocaleString(locale || 'en-US');
   }
 
   function formatAmount(value, currency) {
